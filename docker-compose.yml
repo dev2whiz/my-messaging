@@ -52,8 +52,8 @@ services:
   # ── Gateway (Go) ──────────────────────────────────────────
   gateway:
     build:
-      context: ./services/gateway
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./services/gateway/Dockerfile
     restart: unless-stopped
     ports:
       - "8080:8080"
