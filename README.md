@@ -15,9 +15,7 @@ This project is being built in 5 progressive delivery stages. Currently at **Sta
 | **Cache / Token blocklist** | Valkey 8.x — JWT JTI blocklist with TTL-parity |
 | **Infrastructure** | Docker Compose — fully containerised stack |
 
-Read the current architecture and migration roadmap in [`docs/00-implementation-plan-01.md`](./docs/00-implementation-plan-01.md).
-
-For historical context, the original Go-stage implementation plan is in [`docs/00-implementation-plan-00.md`](./docs/00-implementation-plan-00.md).
+Read the current architecture and staged delivery roadmap in [`docs/00-implementation-stages-plan.md`](./docs/00-implementation-stages-plan.md).
 
 ## Environment Configuration
 

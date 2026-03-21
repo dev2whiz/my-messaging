@@ -38,6 +38,7 @@ The `migrate` container applies all SQL migrations before the gateway starts. Th
 - `POST /auth/login` — looks up by email, re-declares queue (idempotent recover after broker restart), returns JWT + `UserDto`
 - `POST /auth/logout` — invalidates token via JTI-keyed Valkey blocklist with TTL parity
 - `GET /auth/me` — returns `UserDto` for the authenticated principal
+- `DELETE /auth/me` — unregisters current user and removes Stage 1 data traces (used by smoke cleanup)
 
 **Messaging layer** (`MessageController`)
 - `POST /messages` — validates recipient, resolves or creates DM conversation, saves message, publishes to RabbitMQ routing key `user.<recipient-uuid>`, returns `MessageWithSender`
@@ -82,7 +83,7 @@ The `migrate` container applies all SQL migrations before the gateway starts. Th
 
 ### Unit Tests (Spring Boot)
 ```
-Tests run: 50, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 52, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 Test coverage spans: `JwtTokenProvider`, `JwtAuthenticationFilter`, `SecurityConfig`, `RabbitConfig`, `RabbitBrokerService`, `AuthController`, `MessageController`, `UserController`, `ModelMapping`, `MessagingWebSocketHandler`.
@@ -167,7 +168,8 @@ Message simultaneously written to DB and published to recipient's RabbitMQ queue
 | 14 | JTI-based JWT revocation (bounded key size in Redis/Valkey) | ✅ |
 | 15 | `is_group = FALSE` filter on DM conversation lookup | ✅ |
 | 16 | Connection badge UI (Live / Connecting / Reconnecting / Offline) | ✅ |
-| 17 | 50 unit tests passing, frontend build clean | ✅ |
+| 17 | API-based smoke cleanup via `DELETE /auth/me` (no direct SQL in script) | ✅ |
+| 18 | 52 unit tests passing, frontend build clean | ✅ |
 
 ---
 
