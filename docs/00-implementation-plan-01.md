@@ -67,3 +67,25 @@ The new Spring Boot application will reside in `services/gateway-spring`.
 ### Manual Verification
 - Use the existing front-end React app (`localhost:5173`) to register a new user, login, and send messages.
 - Verify that messages bridge seamlessly from the Spring Boot REST endpoint -> Postgres -> RabbitMQ -> Spring WebSockets -> Browser.
+
+## Delivery Workflow By Stage
+
+### Stage 1-4 Command Strategy
+- Use a **root Makefile** as the primary developer command surface.
+- Root targets delegate to service/module-specific Makefiles in `services/gateway-spring/` and `web/`.
+- Keep executable logic in shell scripts under `scripts/` (for example `scripts/smoke-test.sh`), with Make acting only as the orchestration entrypoint.
+- Supported developer flows should cover:
+	- local infrastructure bootstrap (`make infra-up`, `make migrate`)
+	- local service run (`make gateway-run`, `make web-run`)
+	- full container stack (`make up`, `make down`)
+	- build/test (`make build`, `make test`)
+	- integration sanity run (`make smoke`, `make smoke-local`, `make check`)
+
+### Stage 5 Production Ready Additions
+- Add a **CI workflow** in Stage 5, not earlier.
+- CI should become the enforceable quality gate and run at minimum:
+	- backend unit tests
+	- frontend build / type check
+	- docker-based smoke integration test
+- Publish immutable build artifacts / container images from CI.
+- Extend Stage 5 with deployment workflow concerns: image scanning, release tagging, rollout validation, and environment promotion.

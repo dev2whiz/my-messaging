@@ -87,6 +87,71 @@ npm run dev
 
 The Vite dev server proxies `/api` → `http://localhost:8080` and `/ws` → `ws://localhost:8080` automatically (see `vite.config.ts`).
 
+## Supported Commands
+
+The repo uses a **root Makefile** as the main command surface. The root Makefile delegates to module-specific Makefiles in `services/gateway-spring/` and `web/`, while reusable automation logic lives under `scripts/`.
+
+### Frequent Tasks
+
+| Command | Purpose |
+|---|---|
+| `make help` | Show all supported targets |
+| `make up` | Docker: build and start the full stack |
+| `make down` | Docker: stop the full stack |
+| `make restart` | Docker: rebuild and restart the full stack |
+| `make ps` | Docker: show Compose service status |
+| `make logs` | Docker: tail Compose logs |
+| `make infra-up` | Docker: start only Postgres, Valkey, and RabbitMQ |
+| `make infra-down` | Docker: stop only Postgres, Valkey, and RabbitMQ |
+| `make infra-clean` | Docker: destroy containers, volumes, networks, and ephemeral state |
+| `make migrate` | Docker: run the migrations container once |
+| `make gateway-run` | Local process: run the Spring Boot gateway |
+| `make gateway-test` | Local process: run Spring Boot unit tests |
+| `make gateway-build` | Local process: build the Spring Boot artifact |
+| `make web-install` | Local process: install frontend dependencies |
+| `make web-run` | Local process: run the Vite dev server |
+| `make web-build` | Local process: build the frontend bundle |
+| `make build` | Local process: build backend and frontend |
+| `make test` | Local process: run backend tests and frontend build check |
+| `make smoke` | Docker-backed integration smoke test |
+| `make smoke-local` | Local app processes + Docker infra smoke test |
+| `make check` | Local tests followed by Docker smoke test |
+| `make clean` | Local process: clean backend and frontend build outputs |
+
+`make infra-clean` is destructive. It removes Docker Compose containers, named volumes, and networks for this project, wiping the database, broker state, and cache contents.
+
+### Recommended Workflows
+
+#### Fast local development
+```bash
+make infra-up
+make migrate
+
+# terminal 1
+make gateway-run
+
+# terminal 2
+make web-run
+```
+
+#### Full integration validation
+```bash
+make up
+make smoke
+```
+
+#### Pre-merge sanity run
+```bash
+make check
+```
+
+#### Reset infrastructure state
+```bash
+make infra-clean
+make infra-up
+make migrate
+```
+
 ## Key API Endpoints
 
 | Method | Path | Auth | Description |
@@ -94,6 +159,7 @@ The Vite dev server proxies `/api` → `http://localhost:8080` and `/ws` → `ws
 | POST | `/auth/register` | — | Register with username, email, password |
 | POST | `/auth/login` | — | Login with email, password → JWT |
 | POST | `/auth/logout` | Bearer | Invalidate token (JTI-keyed blocklist) |
+| DELETE | `/auth/me` | Bearer | Unregister current user and remove Stage 1 account data |
 | GET | `/auth/me` | Bearer | Current user profile |
 | GET | `/users` | Bearer | List all users |
 | POST | `/messages` | Bearer | Send a DM (`recipient_id`, `body`) |
@@ -109,6 +175,7 @@ The Vite dev server proxies `/api` → `http://localhost:8080` and `/ws` → `ws
 - **JWT security**: Tokens include a `jti` UUID claim. Logout stores `jwt:blocklist:<jti>` in Valkey with TTL matching token expiry — constant 36-char key size regardless of token length.
 - **CORS / WS origins**: Explicit allowlist via `ALLOWED_ORIGINS` env var; no wildcards in production.
 - **Token transport**: `?token=` query parameter only accepted on `/ws` upgrade path; all HTTP endpoints require `Authorization: Bearer`.
+- **Smoke-test hygiene**: `scripts/smoke-test.sh` now calls `DELETE /auth/me` for its temporary users after each run, so sanity checks do not pollute the database or reach into Postgres directly.
 
 ## Deprecated Gateway
 
@@ -120,4 +187,4 @@ The original Go gateway is preserved at `services/gateway-go-deprecated/` for re
 - [ ] **Stage 2: Reliability** — Dead-Letter Exchanges, offline delivery queue, read receipts.
 - [ ] **Stage 3: Groups** — Multi-user channels via topic fan-out bindings.
 - [ ] **Stage 4: Presence & Search** — Valkey heartbeats, full-text search, push notifications.
-- [ ] **Stage 5: Production Ready** — Rate limits, admin dashboard, metrics, horizontal scaling.
+- [ ] **Stage 5: Production Ready** — CI workflow, release automation, rate limits, admin dashboard, metrics, horizontal scaling.
