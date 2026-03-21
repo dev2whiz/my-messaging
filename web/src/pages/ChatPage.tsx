@@ -52,18 +52,59 @@ export default function ChatPage() {
     })
   }, [me])
 
-  useWebSocket({ token: token ?? '', onFrame: handleFrame })
+  const syncSelectedConversation = useCallback(async () => {
+    if (!selectedUser) return
+
+    let conversationId = convMap.get(selectedUser.id)
+    if (!conversationId) {
+      try {
+        const conv = await api.getDirectConversation(selectedUser.id)
+        conversationId = conv.id
+        setConvMap((prev) => new Map(prev).set(selectedUser.id, conv.id))
+      } catch {
+        return
+      }
+    }
+
+    try {
+      const hist = await api.listMessages(conversationId)
+      const ordered = hist.reverse()
+      setMessages((prev) => {
+        const existing = prev.get(conversationId!) ?? []
+        const byId = new Map(existing.map((m) => [m.id, m]))
+        for (const msg of ordered) byId.set(msg.id, msg)
+        const merged = Array.from(byId.values()).sort(
+          (a, b) => new Date(a.sent_at).getTime() - new Date(b.sent_at).getTime()
+        )
+        return new Map(prev).set(conversationId!, merged)
+      })
+    } catch {
+      // Ignore sync errors; WS stream will continue retrying.
+    }
+  }, [selectedUser, convMap])
+
+  const wsStatus = useWebSocket({ token: token ?? '', onFrame: handleFrame, onConnected: syncSelectedConversation })
 
   // Load message history when selecting a user
   const selectUser = async (u: User) => {
     setSelectedUser(u)
-    // If we already have a conversationId for this user, load history
-    const convId = convMap.get(u.id)
+
+    // Resolve the conversationId: use cached value or discover it from the server.
+    // This lets history load on a fresh page without needing to send a message first.
+    let convId = convMap.get(u.id)
+    if (!convId) {
+      try {
+        const conv = await api.getDirectConversation(u.id)
+        convId = conv.id
+        setConvMap((prev) => new Map(prev).set(u.id, conv.id))
+      } catch { /* no conversation exists yet — first time chatting */ }
+    }
+
     if (convId && !(messages.get(convId)?.length)) {
       try {
         const hist = await api.listMessages(convId)
-        setMessages((prev) => new Map(prev).set(convId, hist.reverse()))
-      } catch { /* first conversation, no history yet */ }
+        setMessages((prev) => new Map(prev).set(convId!, hist.reverse()))
+      } catch { /* history fetch failed */ }
     }
   }
 
@@ -110,6 +151,13 @@ export default function ChatPage() {
   const activeMessages = convId ? (messages.get(convId) ?? []) : []
   const charCount = [...body].length
   const charWarn = charCount > 3800
+
+  const wsStatusLabel: Record<typeof wsStatus, string> = {
+    connected: 'Live',
+    connecting: 'Connecting',
+    reconnecting: 'Reconnecting',
+    offline: 'Offline',
+  }
 
   const initials = (name: string) => name.slice(0, 2).toUpperCase()
 
@@ -174,7 +222,10 @@ export default function ChatPage() {
               <div className="avatar">{initials(selectedUser.username)}</div>
               <div>
                 <div className="chat-header-name">{selectedUser.username}</div>
-                <div className="chat-header-status">online</div>
+                <div className="chat-header-meta">
+                  <span className="chat-header-status">online</span>
+                  <span className={`connection-badge ${wsStatus}`}>{wsStatusLabel[wsStatus]}</span>
+                </div>
               </div>
             </div>
 

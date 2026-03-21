@@ -53,8 +53,11 @@ export const api = {
       body: JSON.stringify({ recipient_id, body }),
     }),
 
-  listMessages: (conversationId: string, before?: string) =>
+  listMessages: (conversationId: string, cursor?: string) =>
     request<import('../types').Message[]>(
-      `/conversations/${conversationId}/messages${before ? `?before=${before}` : ''}`
+      `/conversations/${conversationId}/messages${cursor ? `?cursor=${cursor}` : ''}`
     ),
+
+  getDirectConversation: (partnerId: string) =>
+    request<import('../types').Conversation>(`/conversations/direct/${partnerId}`),
 }

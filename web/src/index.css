@@ -352,6 +352,42 @@ a:hover { text-decoration: underline; }
   color: var(--success);
 }
 
+.chat-header-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.connection-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--radius-pill);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  border: 1px solid transparent;
+}
+
+.connection-badge.connected {
+  color: #3fb950;
+  background: rgba(63, 185, 80, 0.15);
+  border-color: rgba(63, 185, 80, 0.25);
+}
+
+.connection-badge.connecting,
+.connection-badge.reconnecting {
+  color: #d29922;
+  background: rgba(210, 153, 34, 0.16);
+  border-color: rgba(210, 153, 34, 0.26);
+}
+
+.connection-badge.offline {
+  color: #f85149;
+  background: rgba(248, 81, 73, 0.15);
+  border-color: rgba(248, 81, 73, 0.25);
+}
+
 .chat-empty {
   flex: 1;
   display: flex;

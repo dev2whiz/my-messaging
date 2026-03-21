@@ -1,4 +1,4 @@
-version: "3.9"
+# my-messaging
 
 services:
 
@@ -15,7 +15,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-msguser}"]
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-msguser}" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -29,7 +29,7 @@ services:
     volumes:
       - valkey_data:/data
     healthcheck:
-      test: ["CMD", "valkey-cli", "ping"]
+      test: [ "CMD", "valkey-cli", "ping" ]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -39,28 +39,55 @@ services:
     image: rabbitmq:3-management-alpine
     restart: unless-stopped
     ports:
-      - "5672:5672"     # AMQP
-      - "15672:15672"   # Management UI
+      - "5672:5672" # AMQP
+      - "15672:15672" # Management UI
     volumes:
       - rabbitmq_data:/var/lib/rabbitmq
     healthcheck:
-      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      test: [ "CMD", "rabbitmq-diagnostics", "-q", "ping" ]
       interval: 10s
       timeout: 10s
       retries: 10
 
-  # ── Gateway (Go) ──────────────────────────────────────────
+  # ── DB Migrations ─────────────────────────────────────────
+  migrate:
+    image: migrate/migrate:v4.18.1
+    volumes:
+      - ./migrations:/migrations
+    command:
+      - -path=/migrations
+      - -database=postgres://${POSTGRES_USER:-msguser}:${POSTGRES_PASSWORD:-msgpassword}@postgres:5432/${POSTGRES_DB:-messaging}?sslmode=disable
+      - up
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # ── Gateway (Spring Boot) ─────────────────────────────────
   gateway:
     build:
-      context: .
-      dockerfile: ./services/gateway/Dockerfile
+      context: ./services/gateway-spring
+      dockerfile: Dockerfile
     restart: unless-stopped
     ports:
       - "8080:8080"
     env_file: .env
+    environment:
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-msguser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-msgpassword}
+      POSTGRES_DB: ${POSTGRES_DB:-messaging}
+      VALKEY_HOST: ${VALKEY_HOST:-valkey}
+      VALKEY_PORT: ${VALKEY_PORT:-6379}
+      RABBITMQ_HOST: ${RABBITMQ_HOST:-rabbitmq}
+      RABBITMQ_PORT: ${RABBITMQ_PORT:-5672}
+      RABBITMQ_USER: ${RABBITMQ_USER:-guest}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD:-guest}
+      JWT_SECRET: ${JWT_SECRET:-supersecretkeythatisatleast32byteslong}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
     depends_on:
-      postgres:
-        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
       valkey:
         condition: service_healthy
       rabbitmq:

@@ -5,6 +5,14 @@ export interface User {
   created_at: string
 }
 
+export interface Conversation {
+  id: string
+  name?: string
+  isGroup: boolean
+  createdBy: string
+  createdAt: string
+}
+
 export interface Message {
   id: string
   conversation_id: string

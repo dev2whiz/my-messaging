@@ -1,0 +1,39 @@
+spring:
+  threads:
+    virtual:
+      enabled: true
+
+  datasource:
+    url: jdbc:postgresql://${POSTGRES_HOST:localhost}:${POSTGRES_PORT:5432}/${POSTGRES_DB:messaging}
+    username: ${POSTGRES_USER:msguser}
+    password: ${POSTGRES_PASSWORD:msgpassword}
+    driver-class-name: org.postgresql.Driver
+
+  data:
+    redis:
+      host: ${VALKEY_HOST:localhost}
+      port: ${VALKEY_PORT:6379}
+
+  rabbitmq:
+    host: ${RABBITMQ_HOST:localhost}
+    port: ${RABBITMQ_PORT:5672}
+    username: ${RABBITMQ_USER:guest}
+    password: ${RABBITMQ_PASSWORD:guest}
+
+jwt:
+  secret: ${JWT_SECRET:supersecretkeythatisatleast32byteslong}
+  expiration: 86400000 # 24 hours
+
+# Comma-separated list of allowed CORS / WebSocket origins.
+# Override with the ALLOWED_ORIGINS env var in production.
+app:
+  allowed-origins: ${ALLOWED_ORIGINS:http://localhost:5173,http://localhost:4173}
+
+server:
+  port: 8080
+
+logging:
+  level:
+    '[org.springframework.amqp]': WARN
+    '[org.springframework.web]': INFO
+    '[d2p.messaging.gateway]': DEBUG
