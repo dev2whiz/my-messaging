@@ -59,19 +59,19 @@ RabbitMQ maps naturally to per-user queues (`user.<id>`) and supports Stage 2 DL
 
 ```
 ┌──────────────────────────────────────────────────────────────┐
-│                         Clients                               │
-│          Browser (React/Vite)     |    Mobile (future)        │
+│                         Clients                              │
+│          Browser (React/Vite)     |    Mobile (future)       │
 └────────────────┬──────────────────────────┬──────────────────┘
                  │ HTTPS / WebSocket        │
          ┌───────▼──────────────────────────▼──────┐
-         │      API Gateway (Spring Boot 3.x)       │
-         │  REST: auth, users, history, messages    │
-         │  WS:   real-time message delivery         │
-         └──────────┬────────────────┬───────────────┘
-                    │ AMQP           │ SQL / Valkey
+         │      API Gateway (Spring Boot 3.x)      │
+         │  REST: auth, users, history, messages   │
+         │  WS:   real-time message delivery       │
+         └──────────┬───────────────┬──────────────┘
+                    │ AMQP          │ SQL / Valkey
          ┌──────────▼──────┐  ┌─────▼───────────────┐
-         │   RabbitMQ      │  │  PostgreSQL + Valkey  │
-         │  (message bus)  │  │  (store + blocklist)  │
+         │   RabbitMQ      │  │ PostgreSQL + Valkey │
+         │  (message bus)  │  │ (store + blocklist) │
          └─────────────────┘  └─────────────────────┘
 ```
 
