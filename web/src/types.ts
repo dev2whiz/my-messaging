@@ -23,7 +23,39 @@ export interface Message {
   read_at?: string
 }
 
-export interface WsFrame {
-  type: 'message' | 'ping' | 'error'
-  payload: Message
+export interface TypingPayload {
+  sender_id: string
+  recipient_id: string
+  is_typing: boolean
+}
+
+export interface PresencePayload {
+  user_id: string
+  is_online: boolean
+}
+
+export type WsFrame =
+  | {
+      type: 'message'
+      payload: Message
+    }
+  | {
+      type: 'typing'
+      payload: TypingPayload
+    }
+  | {
+      type: 'presence'
+      payload: PresencePayload
+    }
+  | {
+      type: 'ping' | 'error'
+      payload?: unknown
+    }
+
+export interface OutboundTypingFrame {
+  type: 'typing'
+  payload: {
+    recipient_id: string
+    is_typing: boolean
+  }
 }
